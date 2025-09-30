@@ -11,7 +11,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="KafkaShop" target="17" />
+      <module name="KafkaShop" target="11" />
       <module name="project_5" target="17" />
       <module name="project_6" target="17" />
     </bytecodeTargetLevel>

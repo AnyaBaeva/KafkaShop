@@ -70,3 +70,19 @@ J
 mirror-producer.properties,4\9\4998e279fc52b54c411bceda7f91dad7cb91c428
 =
 test_hdfs.ps1,2\9\2989dff5b1f2c29bbff17018cc5afd6094e2a8e9
+b
+2src/main/java/com/example/spark/SparkReadMain.java,1\b\1b3bcb9b44c1b6d63224e59eb6ca745bfce2ab9c
+c
+3src/main/java/com/example/client/ClientRequest.java,a\f\afb880ee21d60150b29fa7c5c9cafe026d29b0c6
+p
+@src/main/java/com/example/config/KafkaPropertiesDestination.java,f\4\f4e8caf065037340717cc5d9a14e4313b209a40e
+>
+README_info.md,8\0\8081dfe9fdfdd696a642ec588f5979e9556158d6
+]
+-src/main/java/com/example/client/Product.java,8\8\883fb76aadf8e9fe519575d91f45fb2bec1a0b39
+D
+logs/application.log,0\6\0641b236affda539908a9844d4ee20d152194063
+k
+;src/main/java/com/example/shop/BlockedProductsProducer.java,5\9\5988984f55e2b5dfd6e349050fedd54aade25dca
+g
+7config/spark-defaults.conf/spark-defaults.conf.template,d\3\d34a05c2eb254a01db0abbe2c94b3622dde5770b
