@@ -28,53 +28,69 @@ public class ClientRequest {
 
     private static KafkaProducer<String, String> kafkaProducer;
 
-    public static void main(String[] args) { // Added String[] args parameter
-        Scanner scanner = new Scanner(System.in);
+    public static void main(String[] args) {
+        // Initialize long-lived resources ONCE, outside the loop
+        try (Scanner scanner = new Scanner(System.in)) {
+            initializeKafkaProducer(); // Initialize Kafka producer once
 
-        try {
-            initializeKafkaProducer();
+            // Main program loop
+            while (true) {
+                try {
+                    System.out.print("Введите название товара для поиска (или 'exit' для выхода): ");
+                    String productName = scanner.nextLine().trim();
 
-            // Get product name from console input
-            System.out.print("Введите название товара для поиска: ");
-            String productName = scanner.nextLine().trim();
+                    if ("exit".equalsIgnoreCase(productName)) {
+                        System.out.println("Завершение работы...");
+                        break; // Exit the loop
+                    }
 
-            if (productName.isEmpty()) {
-                System.err.println("Ошибка: название товара не может быть пустым");
-                System.exit(1);
+                    if (productName.isEmpty()) {
+                        System.err.println("Ошибка: название товара не может быть пустым");
+                        continue; // Skip to next iteration
+                    }
+
+                    // Read and parse products
+                    List<Product> products = readProductsFromFile(FILE_STORE);
+
+                    // Find product by name
+                    Product foundProduct = findProductByName(products, productName);
+
+                    if (foundProduct != null) {
+                        // Log user query
+                        logUserQuery(productName, foundProduct.getProductId());
+
+                        // Send response with product ID, name and category
+                        sendProductResponse(foundProduct);
+
+                        // Send recommendations
+                        sendRecommendations(products, foundProduct);
+
+                        System.out.println("Товар найден: " + foundProduct.getName());
+                        System.out.println("ID товара: " + foundProduct.getProductId());
+                        // Небольшая пауза для удобства чтения
+                        Thread.sleep(500);
+                    } else {
+                        logUserQuery(productName, null);
+                        System.out.println("Товар с названием '" + productName + "' не найден");
+                    }
+
+                } catch (Exception e) {
+                    // This catches errors for a single search operation, not critical failures
+                    System.err.println("Ошибка при обработке запроса: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
-
-
-            // Read and parse products
-            List<Product> products = readProductsFromFile(FILE_STORE);
-
-            // Find product by name
-            Product foundProduct = findProductByName(products, productName);
-
-            if (foundProduct != null) {
-                // Log user query
-                logUserQuery(productName, foundProduct.getProductId());
-
-                // Send response with product ID, name and category
-                sendProductResponse(foundProduct);
-
-                // Send recommendations
-                sendRecommendations(products, foundProduct);
-
-                System.out.println("Товар найден: " + foundProduct.getName());
-                System.out.println("ID товара: " + foundProduct.getProductId());
-            } else {
-                logUserQuery(productName, null);
-                System.out.println("Товар с названием '" + productName + "' не найден");
-            }
-
         } catch (Exception e) {
-            System.err.println("Ошибка: " + e.getMessage());
-            e.printStackTrace();
+            // This catches critical errors during initial setup
+            System.err.println("Критическая ошибка при запуске приложения: " + e.getMessage());
         } finally {
+            // Close resources ONLY ONCE, when the entire program is finished
             if (kafkaProducer != null) {
-                kafkaProducer.close();
+                kafkaProducer.close(); // :cite[3]
+                System.out.println("Kafka producer закрыт.");
             }
-            scanner.close();
+            // Scanner is closed only here, after the loop ends
+            System.out.println("Сканнер закрыт.");
         }
     }
 
@@ -366,12 +382,10 @@ public class ClientRequest {
             kafkaProducer.send(record, (metadata, exception) -> {
                 if (exception != null) {
                     System.err.println("Ошибка отправки ответа: " + exception.getMessage());
-                } else {
-                    System.out.println("Ответ отправлен в топик " + RECOMMENDATIONS_TOPIC);
                 }
             });
         }
-
+        System.out.println("Ответ отправлен в топик " + RECOMMENDATIONS_TOPIC);
         kafkaProducer.flush();
         System.out.println("Найдено рекомендаций: " + recommendedProducts.size());
     }
