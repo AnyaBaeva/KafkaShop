@@ -24,11 +24,14 @@ docker exec -it kafka-0 kafka-topics --create --bootstrap-server kafka-0:9092 --
 docker exec -it kafka-0 kafka-topics --create --bootstrap-server kafka-0:9092 --command-config /etc/kafka/secrets/admin.properties --topic blockedProducts --partitions 3 --replication-factor 3
 docker exec -it kafka-0 kafka-topics --create --bootstrap-server kafka-0:9092 --command-config /etc/kafka/secrets/admin.properties --topic response --partitions 3 --replication-factor 3
 docker exec -it kafka-0 kafka-topics --create --bootstrap-server kafka-0:9092 --command-config /etc/kafka/secrets/admin.properties --topic userQuery --partitions 3 --replication-factor 3
+docker exec -it kafka-0 kafka-topics --create --bootstrap-server kafka-0:9092 --command-config /etc/kafka/secrets/admin.properties --topic recommendations --partitions 3 --replication-factor 3
 docker exec -it kafka-0-destination kafka-topics --create --bootstrap-server kafka-0-destination:9095 --topic inputJsonStream --partitions 3 --replication-factor 1
 docker exec -it kafka-0-destination kafka-topics --create --bootstrap-server kafka-0-destination:9095 --topic products --partitions 3 --replication-factor 1
 docker exec -it kafka-0-destination kafka-topics --create --bootstrap-server kafka-0-destination:9095 --topic blockedProducts --partitions 3 --replication-factor 1
 docker exec -it kafka-0-destination kafka-topics --create --bootstrap-server kafka-0-destination:9095 --topic response --partitions 3 --replication-factor 1
 docker exec -it kafka-0-destination kafka-topics --create --bootstrap-server kafka-0-destination:9095 --topic userQuery --partitions 3 --replication-factor 1
+docker exec -it kafka-0-destination kafka-topics --create --bootstrap-server kafka-0-destination:9095 --topic recommendations --partitions 3 --replication-factor 1
+docker exec -it kafka-0-destination kafka-topics --create --bootstrap-server kafka-0-destination:9095 --topic dataAnalysis --partitions 3 --replication-factor 1
 # Выдать права
 docker exec -it kafka-0 kafka-acls `
   --bootstrap-server kafka-0:9092 `
@@ -42,7 +45,8 @@ docker exec -it kafka-0 kafka-acls `
   --transactional-id "*" `
   --delegation-token "*"
 
-#Создайте СХЕМУ для реплики
+#Создайте СХЕМЫ для реплики
+#products-value
 $schemaRegistryUrl = "http://localhost:18082"
 $subject = "products-value"
 
@@ -131,6 +135,242 @@ $headers = @{
 }
 
 try {
+  $response = Invoke-RestMethod -Uri "$schemaRegistryUrl/subjects/$subject/versions" -Method Post -Body $schemaData -Headers $headers
+  Write-Host "Схема Product успешно зарегистрирована! Response: $($response | ConvertTo-Json)"
+} catch {
+  Write-Host "Ошибка при регистрации схемы Product: $($_.Exception.Message)"
+}
+
+#inputJsonStream-value
+$schemaRegistryUrl = "http://localhost:18082"
+$subject = "inputJsonStream-value"
+
+$schema = @'
+{
+"type": "record",
+"name": "inputJsonStream",
+"namespace": "com.example.avro",
+"fields": [
+{"name": "product_id", "type": "string"},
+{"name": "name", "type": "string"},
+{"name": "description", "type": "string"},
+{
+"name": "price",
+"type": {
+"type": "record",
+"name": "Price",
+"fields": [
+{"name": "amount", "type": "double"},
+{"name": "currency", "type": "string"}
+]
+}
+},
+{"name": "category", "type": "string"},
+{"name": "brand", "type": "string"},
+{
+"name": "stock",
+"type": {
+"type": "record",
+"name": "Stock",
+"fields": [
+{"name": "available", "type": "int"},
+{"name": "reserved", "type": "int"}
+]
+}
+},
+{"name": "sku", "type": "string"},
+{
+"name": "tags",
+"type": {
+"type": "array",
+"items": "string"
+}
+},
+{
+"name": "images",
+"type": {
+"type": "array",
+"items": {
+"type": "record",
+"name": "Image",
+"fields": [
+{"name": "url", "type": "string"},
+{"name": "alt", "type": "string"}
+]
+}
+}
+},
+{
+"name": "specifications",
+"type": {
+"type": "record",
+"name": "Specifications",
+"fields": [
+{"name": "weight", "type": "string"},
+{"name": "dimensions", "type": "string"},
+{"name": "battery_life", "type": "string"},
+{"name": "water_resistance", "type": "string"}
+]
+}
+},
+{"name": "created_at", "type": "string"},
+{"name": "updated_at", "type": "string"},
+{"name": "index", "type": "string"},
+{"name": "store_id", "type": "string"}
+]
+}
+'@
+
+$schemaData = @{
+schema = $schema
+} | ConvertTo-Json
+
+$headers = @{
+"Content-Type" = "application/vnd.schemaregistry.v1+json"
+}
+
+try {
+  $response = Invoke-RestMethod -Uri "$schemaRegistryUrl/subjects/$subject/versions" -Method Post -Body $schemaData -Headers $headers
+  Write-Host "Схема inputJsonStream успешно зарегистрирована! Response: $($response | ConvertTo-Json)"
+} catch {
+  Write-Host "Ошибка при регистрации схемы inputJsonStream: $($_.Exception.Message)"
+}
+
+#blockedProducts-value
+$schemaRegistryUrl = "http://localhost:18082"
+$subject = "blockedProducts-value"
+
+$schema = @'
+{
+  "type": "record",
+  "name": "BlockedProduct",
+  "namespace": "com.example.avro",
+  "fields": [
+    {
+      "name": "product_id",
+      "type": "string"
+    }
+  ]
+}
+'@
+
+$schemaData = @{
+  schema = $schema
+} | ConvertTo-Json
+
+$headers = @{
+  "Content-Type" = "application/vnd.schemaregistry.v1+json"
+}
+
+try {
+  $response = Invoke-RestMethod -Uri "$schemaRegistryUrl/subjects/$subject/versions" -Method Post -Body $schemaData -Headers $headers
+  Write-Host "Схема BlockedProduct успешно зарегистрирована! Response: $($response | ConvertTo-Json)"
+} catch {
+  Write-Host "Ошибка при регистрации схемы BlockedProduct: $($_.Exception.Message)"
+}
+
+
+#recommendation-value
+$schemaRegistryUrl = "http://localhost:18082"
+$subject = "recommendation-value"
+
+$schemaRecommendation = @'
+{
+  "type": "record",
+  "name": "Recommendation",
+  "namespace": "com.example.avro",
+  "fields": [
+    {"name": "name", "type": "string"},
+    {"name": "id", "type": "string"},
+    {"name": "category", "type": "string"},
+    {"name": "brand", "type": "string"}
+  ]
+}
+'@
+
+$schemaData = @{
+  schema = $schema
+} | ConvertTo-Json
+
+$headers = @{
+  "Content-Type" = "application/vnd.schemaregistry.v1+json"
+}
+
+try {
+  $response = Invoke-RestMethod -Uri "$schemaRegistryUrl/subjects/$subject/versions" -Method Post -Body $schemaData -Headers $headers
+  Write-Host "Схема Recommendation успешно зарегистрирована! Response: $($response | ConvertTo-Json)"
+} catch {
+  Write-Host "Ошибка при регистрации схемы Recommendation: $($_.Exception.Message)"
+}
+
+#response-value
+$schemaRegistryUrl = "http://localhost:18082"
+$subject = "response-value"
+
+$schemaResponse = @'
+{
+  "type": "record",
+  "name": "Response",
+  "namespace": "com.example.avro",
+  "fields": [
+    {"name": "name", "type": "string"},
+    {"name": "id", "type": "string"},
+    {"name": "category", "type": "string"}
+  ]
+}
+'@
+
+
+$schemaData = @{
+  schema = $schema
+} | ConvertTo-Json
+
+$headers = @{
+  "Content-Type" = "application/vnd.schemaregistry.v1+json"
+}
+
+try {
+  $response = Invoke-RestMethod -Uri "$schemaRegistryUrl/subjects/$subject/versions" -Method Post -Body $schemaData -Headers $headers
+  Write-Host "Схема Response успешно зарегистрирована! Response: $($response | ConvertTo-Json)"
+} catch {
+  Write-Host "Ошибка при регистрации схемы Response: $($_.Exception.Message)"
+}
+
+
+#userQuery-value
+$schemaRegistryUrl = "http://localhost:18082"
+$subject = "userQuery-value"
+
+$schemaUserQuery = @'
+{
+  "type": "record",
+  "name": "UserQuery",
+  "namespace": "com.example.avro",
+  "fields": [
+    {"name": "found_product_id", "type": "string"},
+    {"name": "product_name_query", "type": "string"},
+    {"name": "query_type", "type": "string"},
+    {"name": "timestamp", "type": "string"}
+  ]
+}
+'@
+
+$schemaData = @{
+  schema = $schema
+} | ConvertTo-Json
+
+$headers = @{
+  "Content-Type" = "application/vnd.schemaregistry.v1+json"
+}
+
+try {
+  $response = Invoke-RestMethod -Uri "$schemaRegistryUrl/subjects/$subject/versions" -Method Post -Body $schemaData -Headers $headers
+  Write-Host "Схема userQuery успешно зарегистрирована! Response: $($response | ConvertTo-Json)"
+} catch {
+  Write-Host "Ошибка при регистрации схемы userQuery: $($_.Exception.Message)"
+}
+
+try {
 $response = Invoke-RestMethod `
 -Uri "$schemaRegistryUrl/subjects/$subject/versions" `
 -Method Post `
@@ -190,7 +430,7 @@ $connectorConfig = @{
 Invoke-RestMethod -Uri "http://localhost:18083/connectors/" -Method Post -ContentType "application/json" -Body $connectorConfig
 
 # Проверить статус коннектора
-Invoke-RestMethod -Uri "http://localhost:18083/connectors/hdfs-sink-json-connector/status" | ConvertTo-Json
+#Invoke-RestMethod -Uri "http://localhost:18083/connectors/hdfs-sink-connector-final/status" | ConvertTo-Json
 # отчет
 # PS C:\projects\KafkaSSlDemo>
 # docker exec hadoop-namenode hdfs dfsadmin -report

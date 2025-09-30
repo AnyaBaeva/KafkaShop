@@ -7,4 +7,3 @@ chmod -R 777 /usr/local/hadoop/hdfs/datanode
 
 
 exec "$@"
-    

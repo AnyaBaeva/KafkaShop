@@ -20,68 +20,92 @@
 #запустите скрипт на выполнение
 .\deploy.ps1
  ```
-
-# 📊 Мониторинг
+## 📊 Мониторинг
 ```
 - **Kafka UI**: [http://localhost:8080](http://localhost:8080)
 - **Kafka UI Destination**: [http://localhost:8082](http://localhost:8082) 
-- **HDFS UI**: [http://localhost:9870](http://localhost:9870)
-- **Spark UI**: [http://localhost:8081](http://localhost:8081)
 ```
 #Hadoop
-##Для Hadoop на Windows:
-1. Установите переменную окружения HADOOP_HOME:
+## 📊 Мониторинг
+```
+- **HDFS UI**: [http://localhost:9870](http://localhost:9870)
+- **Spark UI**: [http://localhost:8081](http://localhost:8085)
+```
+#SPARK
+##Дополнительная настройка
+Добавьте в файл C:\Windows\System32\drivers\etc\hosts:
+text
+127.0.0.1 hadoop-datanode-1
+127.0.0.1 hadoop-datanode-2  
+127.0.0.1 hadoop-datanode-3
+
+Через командную строку
 cmd
 ```
-setx HADOOP_HOME "C:\hadoop"
+notepad C:\Windows\System32\drivers\etc\hosts
 ```
-2. Убедитесь, что путь ведет к корневой директории Hadoop (не включая \bin) .
-3. Скачайте и установите winutils.exe:
-4. Скачайте подходящую версию winutils.exe
-5. Поместите его в директорию %HADOOP_HOME%\bin\
-6. Убедитесь, что архитектура winutils.exe соответствует вашей системе (x64 или x86)
-7. Установите свойство в коде:
-java
+## 📊 Мониторинг
 ```
-System.setProperty("hadoop.home.dir", "C:\\hadoop");
+- **Spark UI**: [http://localhost:8081](http://localhost:8085)
 ```
-Добавьте эту строку в начало вашего Java-кода перед любыми операциями с Hadoop .
-Проверьте установку:
-cmd
-```
-echo %HADOOP_HOME%
-dir %HADOOP_HOME%\bin\winutils.exe
-```
-
-#SPARK 
-
-
 #SHOP API
 ## Добавление заблокированного товара
-1. Добавьте в файл blocked_products.txt код товара, который должен быть заблокирован (уже заполнен для теста)
-2. Запустите на выполнение класс shop/BlockedProductsProducer
-3. В топике blockedProducts появится информация о заблокированных товарах
+1. Добавьте в файл blocked_products.txt код товара, который должен быть заблокирован **(предварительно заполнен для теста)**
+2. Запустите на выполнение класс **shop/BlockedProductsProducer**
+Пример:
+```
+   Successfully sent blocked product: 12345
+   Successfully sent blocked product: 11223
+   All blocked products from file sent to Kafka topic: blockedProducts
+```
+4. В топике blockedProducts появится информация о заблокированных товарах
 ## Загрузка товара в базу
-1. Дополните файл products.json тестовыми данными (уже заполнен для теста)
-2. Запустите на выполнение класс shop/ProductFilterStream
-3. В топике inputJsonStream появится вся информация из файла
-4. В топике products появится информация обо всех товарах кроме заблокированных
+1. Дополните файл products.json тестовыми данными **(предварительно заполнен для теста)**
+2. Запустите на выполнение класс **shop/ProductFilterStream**
+Пример:
+```
+   Product blocked: 12345
+   Product allowed: 12346
+   Product allowed: 12347
+   Product allowed: 67890
+   Product allowed: 24680
+   Product allowed: 13579
+   Product blocked: 11223
+   Product allowed: 44556
+```
+4. В топике inputJsonStream появится вся информация из файла
+5. В топике products появится информация обо всех товарах кроме заблокированных
+
+**Подождите пару минут, для того чтобы данные успели попасть в реплику и далее в hadoop**
 
 #CLIENT API
+Пример простой аналитики:
+1. поиск информации о товаре по его имени,
+2. получение персонализированных рекомендаций.
 ##Запрос клиента:
-Выполните команду с параметрами (пример простой аналитики):
-1. фильтр по бренду
-2. дата последнего изменения не позднее указанного количества месяцев
+1. Запустите на выполнение класс **client/ClientRequest**
+2. Введите наименование товара, например: Умные часы XYZ Pro детские
+3. Система найдет товар в аналоге БД (файле), запишет сам запрос и ответ в топики (userQuery, response), 
+а так же выведет рекомендации по соответствующему бренду и категории и запишет в топик recommendations.
+пример:
 ```
-java -cp "C:/projects/KafkaSSlDemo/target/project_6-1.0-SNAPSHOT-jar-with-dependencies.jar" com.example.client.ProductParser "./connector-output/products-final.json" "XYZ" 1
+   Введите название товара для поиска: Умные часы XYZ Pro детские
+   Запрос записан в топик userQuery
+   Ответ отправлен в топик response
+   Ответ отправлен в топик recommendations
+   Найдено рекомендаций: 3
+   Товар найден: Умные часы XYZ Pro детские
+   ID товара: 12346
 ```
-В результате:
-1. Запрос будет записан в топик **userQuery**
-2. Результаты отправлены в топик **response**
-
-
+#Аналитика Spark
+Пример простой аналитики:
+1. Отчет о количестве товаров по бренду и категории
+##Запрос аналитики:
+2. Запустите на выполнение класс **spark/SparkReadMain**
+3. Результат анализа можно увидеть в топике **dataAnalysis**
+![img_6.png](img_6.png)
 # Prometheus
-## проверить метрики
+##Проверить метрики
 Убедитесь что у Prometheus есть доступ к kafka-connect-host. 
 1. Перейдите в Prometheus. Для этого в браузере введите ссылку http://localhost:9090
 2. Нажав на вкладку “Status”, выберите поле “Targets”. В окне вы должны увидеть 2 сервиса
@@ -91,24 +115,22 @@ prometheus и kafka-connect-host. У каждого статус = up, резу�
 http://localhost:9876/metrics
 # Grafana
 1. Для просмотра метрик запустите Grafana (login/pass admin/admin) **http://localhost:3000**
-2. Импортируйте файл с настройками **./KafkaDebezium/grafana/dashboards/connect.json**
-
-
-#Telegramm
-kafka_shop_control
-@GrafanaShopBot
-User id: 7414981952
-7608308975:AAGwHsvbglSuVw_twig0t8jw_uM-iEKRBuk
-
-![img_2.png](img_2.png)
-![img_3.png](img_3.png)
-![img_4.png](img_4.png)
-
-
-Done! Congratulations on your new bot. You will find it at t.me/Shop_Kafka_Notification_bot. You can now add a description, about section and profile picture for your bot, see /help for a list of commands. By the way, when you've finished creating your cool bot, ping our Bot Support if you want a better username for it. Just make sure the bot is fully operational before you do this.
-
+##Dashboards
+1.Импортируйте файл с настройками **./KafkaDebezium/grafana/dashboards/connect.json**
+##Alerting
+### настройка
+1. Нажмите на колокольчик, далее на кнопку **Add channel**
+![img_8.png](img_8.png)
+2. Заполните поля, сохраните
+![img_10.png](img_10.png)
+3.на дашборде нажмите Edit
+![img_11.png](img_11.png)
+3. Alert/Create Alert, укажите требуемые параметры, для теста устанвлен минимум
+![img_12.png](img_12.png)
+###Telegramm канал
+@Shop_Kafka_Notification_bot
 Use this token to access the HTTP API:
 7608308975:AAGwHsvbglSuVw_twig0t8jw_uM-iEKRBuk
-Keep your token secure and store it safely, it can be used by anyone to control your bot.
-
-For a description of the Bot API, see this page: https://core.telegram.org/bots/api
+![img_5.png](img_5.png)
+###Пример сообщения в канале
+![img_13.png](img_13.png)

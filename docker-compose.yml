@@ -274,7 +274,7 @@ services:
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry-destination
       # Подключение к целевому кластеру Kafka
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-0-destination:9092,PLAINTEXT://kafka-1-destination:9092,PLAINTEXT://kafka-2-destination:9092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-0-destination:9095,PLAINTEXT://kafka-1-destination:9093,PLAINTEXT://kafka-2-destination:9094
       SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: PLAINTEXT  # Целевой кластер использует PLAINTEXT
       # Дополнительные настройки
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8084
@@ -319,7 +319,7 @@ services:
       - "8082:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: destination-kafka
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-0-destination:9092,kafka-1-destination:9093,kafka-2-destination:9094
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-0-destination:9095,kafka-1-destination:9093,kafka-2-destination:9094
       KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: PLAINTEXT
       # Добавьте конфигурацию для целевого Schema Registry
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry-destination:8084
@@ -467,7 +467,7 @@ services:
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
 
       # Настройки для ЦЕЛЕВОГО кластера (HDFS Sink)
-      CONNECT_PRODUCER_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-0-destination:9092,PLAINTEXT://kafka-1-destination:9093,PLAINTEXT://kafka-2-destination:9094
+      CONNECT_PRODUCER_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-0-destination:9095,PLAINTEXT://kafka-1-destination:9093,PLAINTEXT://kafka-2-destination:9094
       CONNECT_PRODUCER_SECURITY_PROTOCOL: PLAINTEXT
       CONNECT_PRODUCER_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
       CONNECT_PRODUCER_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
@@ -509,7 +509,7 @@ services:
     volumes:
       - ./config/core-site.xml:/etc/hadoop/conf/core-site.xml:ro
       - ./config/hdfs-site-namenode.xml:/etc/hadoop/conf/hdfs-site.xml:ro
-      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
       - ./spark-apps:/opt/spark-apps
       - ./ssl/client:/kafka-client-creds:ro
     depends_on:
@@ -535,7 +535,7 @@ services:
     volumes:
       - ./config/core-site.xml:/etc/hadoop/conf/core-site.xml:ro
       - ./config/hdfs-site-namenode.xml:/etc/hadoop/conf/hdfs-site.xml:ro
-      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
     depends_on:
       - spark-master
       - hadoop-namenode
@@ -557,7 +557,7 @@ services:
     volumes:
       - ./config/core-site.xml:/etc/hadoop/conf/core-site.xml:ro
       - ./config/hdfs-site-namenode.xml:/etc/hadoop/conf/hdfs-site.xml:ro
-      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
       - ./ssl/client:/kafka-client-creds:ro
     depends_on:
       - spark-master

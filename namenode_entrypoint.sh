@@ -8,4 +8,3 @@ chmod -R 777 /usr/local/hadoop/hdfs/namenode
 
 hdfs namenode -format
 exec "$@"
-    
